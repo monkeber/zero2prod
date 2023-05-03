@@ -147,17 +147,19 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_empty() {
     for (body, description) in test_cases {
         let response = client
             .post(&format!("{}/subscriptions", &app.address))
-            .header("Content-Type", "application/x-www-forma-urlencoded")
+            .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
             .send()
             .await
             .expect("Failed to execute request.");
 
         assert_eq!(
-            200,
+            400,
             response.status().as_u16(),
-            "The API did not return a 200 OK when the payload was {}.",
-            description
+            "The API did not return a 400 Bad Request when the payload was {}. \
+            The response is: '{}'.",
+            description,
+            response.text().await.unwrap()
         );
     }
 }

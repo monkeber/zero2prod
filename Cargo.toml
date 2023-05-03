@@ -16,6 +16,7 @@ name = "zero2prod"
 actix-web = "4"
 chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
 config = "0.13"
+fake = "2.6"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-actix-web = "0.7"
@@ -27,6 +28,7 @@ serde = { version = "1", features = ["derive"] }
 serde-aux = "4"
 unicode-segmentation = "1"
 uuid = { version = "1", features = ["v4"] }
+validator = "0.16"
 
 [dependencies.sqlx]
 
@@ -46,4 +48,7 @@ features = [
 
 claims = "0.7"
 once_cell = "1"
+rand = "0.8"
 reqwest = "0.11"
+quickcheck = "1"
+quickcheck_macros = "1"
