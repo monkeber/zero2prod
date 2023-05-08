@@ -1,4 +1,4 @@
-use crate::email_client::{EmailClient, self};
+use crate::email_client::EmailClient;
 use actix_web::{dev::Server, web, App, HttpServer};
 use sqlx::PgPool;
 use std::net::TcpListener;
