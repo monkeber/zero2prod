@@ -1,3 +1,4 @@
+use crate::routes::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
@@ -107,18 +108,4 @@ impl From<String> for ConfirmError {
     fn from(e: String) -> Self {
         Self::IncorrectToken(e)
     }
-}
-
-fn error_chain_fmt(
-    e: &impl std::error::Error,
-    f: &mut std::fmt::Formatter<'_>,
-) -> std::fmt::Result {
-    writeln!(f, "{}\n", e)?;
-    let mut current = e.source();
-    while let Some(cause) = current {
-        writeln!(f, "Caused by:\n\t{}", cause)?;
-        current = cause.source();
-    }
-
-    Ok(())
 }

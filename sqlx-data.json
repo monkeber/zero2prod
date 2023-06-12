@@ -1,5 +1,23 @@
 {
   "db": "PostgreSQL",
+  "1342336ed87b41ddaf9203886fa8b7890e5a22238cba2bb81651473ac2064450": {
+    "describe": {
+      "columns": [
+        {
+          "name": "email",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        SELECT email\n        FROM subscriptions\n        WHERE status = 'confirmed'"
+  },
   "49b1ead021fbb757a905e2f5b82234033b1ceda20bd601ddf7ad5ecb219de8da": {
     "describe": {
       "columns": [],
