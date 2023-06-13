@@ -1,9 +1,14 @@
 use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
 use crate::routes::error_chain_fmt;
-use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
+use actix_web::{
+    http::header::{HeaderMap, HeaderValue},
+    http::StatusCode,
+    web, HttpRequest, HttpResponse, ResponseError,
+};
 use anyhow::Context;
 use sqlx::PgPool;
+use secrecy::Secret;
 
 #[derive(thiserror::Error)]
 pub enum PublishError {
@@ -29,7 +34,9 @@ pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
+    request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
+    let _credentials = basic_authentication(request.headers());
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
         match subscriber {
@@ -55,6 +62,15 @@ pub async fn publish_newsletter(
         }
     }
     Ok(HttpResponse::Ok().finish())
+}
+
+struct Credentials {
+    username: String,
+    password: Secret<String>,
+}
+
+fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
+    todo!()
 }
 
 #[derive(serde::Deserialize)]
