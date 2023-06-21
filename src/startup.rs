@@ -76,6 +76,8 @@ pub fn run(
             .wrap(TracingLogger::default())
             .route("/", web::get().to(home))
             .route("/health_check", web::get().to(health_check))
+            .route("/login", web::post().to(login))
+            .route("/login", web::get().to(login_form))
             .route("/newsletters", web::post().to(publish_newsletter))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
