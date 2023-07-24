@@ -20,6 +20,7 @@ base64 = "0.21"
 chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
 config = "0.13"
 fake = "2.6"
+hex = "0.4"
 hmac = { version = "0.12", features = ["std"] }
 htmlescape = "0.3"
 rand = { version = "0.8", features = ["std_rng"] }
