@@ -44,7 +44,7 @@ validator = "0.16"
 
 version = "0.11"
 default-features = false
-features = ["json", "rustls-tls"]
+features = ["cookies", "json", "rustls-tls"]
 
 [dependencies.sqlx]
 
