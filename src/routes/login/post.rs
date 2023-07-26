@@ -1,6 +1,7 @@
 use crate::authentication::{validate_credentials, AuthError, Credentials};
 use crate::routes::error_chain_fmt;
 use actix_web::{error::InternalError, http::header::LOCATION, web, HttpResponse};
+use actix_web_flash_messages::FlashMessage;
 use secrecy::Secret;
 use sqlx::PgPool;
 
@@ -33,6 +34,7 @@ pub async fn login(
                 AuthError::InvalidCredentials(_) => LoginError::AuthError(e.into()),
                 AuthError::UnexpectedError(_) => LoginError::UnexpectedError(e.into()),
             };
+            FlashMessage::error(e.to_string()).send();
             let response = HttpResponse::SeeOther()
                 .insert_header((LOCATION, "/login"))
                 .finish();
@@ -43,7 +45,7 @@ pub async fn login(
 
 #[derive(thiserror::Error)]
 pub enum LoginError {
-    #[error("Authnetication failed")]
+    #[error("Authentication failed")]
     AuthError(#[source] anyhow::Error),
     #[error("Something went wrong")]
     UnexpectedError(#[from] anyhow::Error),
