@@ -1,8 +1,11 @@
+use crate::authentication::{validate_credentials, AuthError, Credentials};
+use crate::routes::admin::dashboard::get_username;
 use crate::session_state::TypedSession;
 use crate::utils::{e500, see_other};
 use actix_web::{web, HttpResponse};
 use actix_web_flash_messages::FlashMessage;
 use secrecy::{ExposeSecret, Secret};
+use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -14,7 +17,14 @@ pub struct FormData {
 pub async fn change_password(
     form: web::Form<FormData>,
     session: TypedSession,
+    pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
+    let user_id = session.get_user_id().map_err(e500)?;
+    if user_id.is_none() {
+        return Ok(see_other("/login"));
+    }
+    let user_id = user_id.unwrap();
+
     if session.get_user_id().map_err(e500)?.is_none() {
         return Ok(see_other("/login"));
     }
@@ -27,5 +37,37 @@ pub async fn change_password(
 
         return Ok(see_other("/admin/password"));
     }
-    todo!()
+
+    let min_len: usize = 12;
+    let max_len: usize = 128;
+    if form.new_password.expose_secret().len() < min_len
+        || form.new_password.expose_secret().len() > max_len
+    {
+        FlashMessage::error(
+            format!("The new password should not be less than {min_len} and not more than {max_len} characters long."),
+        )
+        .send();
+
+        return Ok(see_other("/admin/password"));
+    }
+
+    let username = get_username(user_id, &pool).await.map_err(e500)?;
+    let credentials = Credentials {
+        username,
+        password: form.0.current_password,
+    };
+    if let Err(e) = validate_credentials(credentials, &pool).await {
+        return match e {
+            AuthError::InvalidCredentials(_) => {
+                FlashMessage::error("The current password is incorrect.").send();
+                Ok(see_other("/admin/password"))
+            }
+            AuthError::UnexpectedError(_) => Err(e500(e)),
+        };
+    }
+    crate::authentication::change_password(user_id, form.0.new_password, &pool)
+        .await
+        .map_err(e500)?;
+    FlashMessage::error("Your password has been changed.").send();
+    Ok(see_other("/admin/password"))
 }
