@@ -40,13 +40,20 @@ impl ResponseError for PublishError {
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct FormData {
+    title: String,
+    text_body: String,
+    html_body: String,
+}
+
 #[tracing::instrument(
     name = "Publish a newsletter issue",
     skip(body, pool, email_client, user_id),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn publish_newsletter(
-    body: web::Json<BodyData>,
+    body: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     user_id: web::ReqData<UserId>,
@@ -62,8 +69,8 @@ pub async fn publish_newsletter(
                     .send_email(
                         &subscriber.email,
                         &body.title,
-                        &body.content.html,
-                        &body.content.text,
+                        &body.html_body,
+                        &body.text_body,
                     )
                     .await
                     .with_context(|| {
@@ -79,18 +86,6 @@ pub async fn publish_newsletter(
         }
     }
     Ok(HttpResponse::Ok().finish())
-}
-
-#[derive(serde::Deserialize)]
-pub struct BodyData {
-    title: String,
-    content: Content,
-}
-
-#[derive(serde::Deserialize)]
-pub struct Content {
-    html: String,
-    text: String,
 }
 
 struct ConfirmedSubscriber {

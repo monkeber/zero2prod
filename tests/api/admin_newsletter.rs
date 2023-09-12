@@ -4,7 +4,7 @@ use wiremock::matchers::{any, method, path};
 use wiremock::{Mock, ResponseTemplate};
 
 #[tokio::test]
-async fn newsletters_are_not_delivered_to_unconfiormed_subscribers() {
+async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
     let app = spawn_app().await;
     create_unconfirmed_subscriber(&app).await;
 
@@ -16,10 +16,8 @@ async fn newsletters_are_not_delivered_to_unconfiormed_subscribers() {
 
     let newsletter_request_body = serde_json::json!({
         "title": "Newsletter title",
-        "content": {
-            "text": "Newsletter body as plain text",
-            "html": "<p>Newsletter body as HTML</p>",
-        }
+        "text_body": "Newsletter body as plain text",
+        "html_body": "<p>Newsletter body as HTML</p>",
     });
     let response = app.post_newsletters(newsletter_request_body).await;
 
@@ -40,10 +38,8 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
 
     let newsletter_request_body = serde_json::json!({
         "title": "Newsletter title",
-        "content": {
-            "text": "Newsletter body as plain text",
-            "html": "<p>Newsletter body as HTML</p>",
-        }
+        "text_body": "Newsletter body as plain text",
+        "html_body": "<p>Newsletter body as HTML</p>",
     });
     let response = app.post_newsletters(newsletter_request_body).await;
 
