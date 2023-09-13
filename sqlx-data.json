@@ -18,6 +18,19 @@
     },
     "query": "\n        SELECT email\n        FROM subscriptions\n        WHERE status = 'confirmed'"
   },
+  "2880480077b654e38b63f423ab40680697a500ffe1af1d1b39108910594b581b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        UPDATE users\n        SET password_hash = $1\n        WHERE user_id = $2\n        "
+  },
   "49b1ead021fbb757a905e2f5b82234033b1ceda20bd601ddf7ad5ecb219de8da": {
     "describe": {
       "columns": [],
