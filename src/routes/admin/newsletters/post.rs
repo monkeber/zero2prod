@@ -49,18 +49,14 @@ pub struct FormData {
 
 #[tracing::instrument(
     name = "Publish a newsletter issue",
-    skip(body, pool, email_client, user_id),
-    fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
+    skip(body, pool, email_client),
+    fields(username=tracing::field::Empty)
 )]
 pub async fn publish_newsletter(
     body: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
-    user_id: web::ReqData<UserId>,
 ) -> Result<HttpResponse, PublishError> {
-    let user_id = user_id.into_inner();
-    tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
-
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
         match subscriber {
