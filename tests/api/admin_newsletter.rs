@@ -128,7 +128,7 @@ async fn you_must_be_logged_in_to_access_newsletters() {
 #[tokio::test]
 async fn newsletter_creation_is_idempotent() {
     let app = spawn_app().await;
-    create_unconfirmed_subscriber(&app).await;
+    create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
     Mock::given(path("/email"))
