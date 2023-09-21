@@ -19,6 +19,7 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
         "title": "Newsletter title",
         "text_body": "Newsletter body as plain text",
         "html_body": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_newsletters(&newsletter_request_body).await;
 
@@ -43,6 +44,7 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
         "title": "Newsletter title",
         "text_body": "Newsletter body as plain text",
         "html_body": "<p>Newsletter body as HTML</p>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
     });
     let response = app.post_newsletters(&newsletter_request_body).await;
 
@@ -93,6 +95,7 @@ async fn newsletters_returns_400_for_invalid_data() {
             serde_json::json!({
                 "text_body": "Newsletter body as plain text",
                 "html_body": "<p>Newsletter body as HTML</p>",
+                "idempotency_key": uuid::Uuid::new_v4().to_string()
             }),
             "missing title",
         ),

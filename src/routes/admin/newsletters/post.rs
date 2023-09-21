@@ -1,18 +1,15 @@
 use crate::domain::SubscriberEmail;
 use crate::email_client::EmailClient;
+use crate::idempotency::IdempotencyKey;
 use crate::routes::error_chain_fmt;
-use crate::utils::see_other;
-use actix_web::{
-    http::header, http::header::HeaderValue, http::StatusCode, web, HttpResponse, ResponseError,
-};
+use crate::utils::{e400, e500, see_other};
+use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use actix_web_flash_messages::FlashMessage;
 use anyhow::Context;
 use sqlx::PgPool;
 
 #[derive(thiserror::Error)]
 pub enum PublishError {
-    #[error("Authentication failed")]
-    AuthError(#[source] anyhow::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -29,14 +26,6 @@ impl ResponseError for PublishError {
             PublishError::UnexpectedError(_) => {
                 HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
             }
-            PublishError::AuthError(_) => {
-                let mut response = HttpResponse::new(StatusCode::UNAUTHORIZED);
-                let header_value = HeaderValue::from_str(r#"Basic realm="publish""#).unwrap();
-                response
-                    .headers_mut()
-                    .insert(header::WWW_AUTHENTICATE, header_value);
-                response
-            }
         }
     }
 }
@@ -46,6 +35,7 @@ pub struct FormData {
     title: String,
     text_body: String,
     html_body: String,
+    idempotency_key: String,
 }
 
 #[tracing::instrument(
@@ -57,22 +47,25 @@ pub async fn publish_newsletter(
     body: web::Form<FormData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
-) -> Result<HttpResponse, PublishError> {
-    let subscribers = get_confirmed_subscribers(&pool).await?;
+) -> Result<HttpResponse, actix_web::Error> {
+    let FormData {
+        title,
+        text_body,
+        html_body,
+        idempotency_key,
+    } = body.0;
+    let _idempotency_key: IdempotencyKey = idempotency_key.try_into().map_err(e400)?;
+    let subscribers = get_confirmed_subscribers(&pool).await.map_err(e500)?;
     for subscriber in subscribers {
         match subscriber {
             Ok(subscriber) => {
                 email_client
-                    .send_email(
-                        &subscriber.email,
-                        &body.title,
-                        &body.html_body,
-                        &body.text_body,
-                    )
+                    .send_email(&subscriber.email, &title, &html_body, &text_body)
                     .await
                     .with_context(|| {
                         format!("Failed to send newsletter issue to {}", subscriber.email)
-                    })?;
+                    })
+                    .map_err(e500)?;
             }
             Err(error) => {
                 tracing::warn!(
