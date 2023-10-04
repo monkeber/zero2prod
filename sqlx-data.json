@@ -1,23 +1,5 @@
 {
   "db": "PostgreSQL",
-  "1342336ed87b41ddaf9203886fa8b7890e5a22238cba2bb81651473ac2064450": {
-    "describe": {
-      "columns": [
-        {
-          "name": "email",
-          "ordinal": 0,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n        SELECT email\n        FROM subscriptions\n        WHERE status = 'confirmed'"
-  },
   "2880480077b654e38b63f423ab40680697a500ffe1af1d1b39108910594b581b": {
     "describe": {
       "columns": [],
@@ -30,6 +12,45 @@
       }
     },
     "query": "\n        UPDATE users\n        SET password_hash = $1\n        WHERE user_id = $2\n        "
+  },
+  "38ba903ad605b1dcbbae874b3bda0833c360ea3a31a7944a49aaab37cf3799aa": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Int2",
+          {
+            "Custom": {
+              "kind": {
+                "Array": {
+                  "Custom": {
+                    "kind": {
+                      "Composite": [
+                        [
+                          "name",
+                          "Text"
+                        ],
+                        [
+                          "value",
+                          "Bytea"
+                        ]
+                      ]
+                    },
+                    "name": "header_pair"
+                  }
+                }
+              },
+              "name": "_header_pair"
+            }
+          },
+          "Bytea"
+        ]
+      }
+    },
+    "query": "\n        UPDATE idempotency\n        SET\n            response_status_code = $3,\n            response_headers = $4,\n            response_body = $5\n        WHERE\n            user_id = $1 AND\n            idempotency_key = $2\n        "
   },
   "49b1ead021fbb757a905e2f5b82234033b1ceda20bd601ddf7ad5ecb219de8da": {
     "describe": {
@@ -58,6 +79,33 @@
       }
     },
     "query": "INSERT INTO subscription_tokens(subscription_token, subscriber_id) VALUES($1, $2)"
+  },
+  "5c2112bcac831dc014481b37c1d7ec0e8a42dc7a12f40404888de9c717ed1167": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO newsletter_issues (\n            newsletter_issue_id,\n            title,\n            text_body,\n            html_body,\n            published_at\n        )\n        VALUES ($1, $2, $3, $4, now())\n        "
+  },
+  "70a7c151a45489ca4bea2787620f04b419296911304c40ee5c197623a849bda9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO issue_delivery_queue (\n            newsletter_issue_id,\n            subscriber_email\n        )\n        SELECT $1, email\n            FROM subscriptions\n            WHERE status = 'confirmed'\n        "
   },
   "a71a1932b894572106460ca2e34a63dc0cb8c1ba7a70547add1cddbb68133c2b": {
     "describe": {
@@ -136,5 +184,74 @@
       }
     },
     "query": "\n        SELECT user_id, password_hash\n        FROM users WHERE username = $1\n        "
+  },
+  "f21bdc89f34677ff80cc91f70349ea1d423e0627f3a303e3cc201b990842b70f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "response_status_code!",
+          "ordinal": 0,
+          "type_info": "Int2"
+        },
+        {
+          "name": "resopnse_headers!: Vec<HeaderPairRecord>",
+          "ordinal": 1,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Array": {
+                  "Custom": {
+                    "kind": {
+                      "Composite": [
+                        [
+                          "name",
+                          "Text"
+                        ],
+                        [
+                          "value",
+                          "Bytea"
+                        ]
+                      ]
+                    },
+                    "name": "header_pair"
+                  }
+                }
+              },
+              "name": "_header_pair"
+            }
+          }
+        },
+        {
+          "name": "response_body!",
+          "ordinal": 2,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        SELECT\n            response_status_code as \"response_status_code!\",\n            response_headers as \"resopnse_headers!: Vec<HeaderPairRecord>\",\n            response_body as \"response_body!\"\n        FROM idempotency\n        WHERE\n            user_id = $1 AND\n            idempotency_key = $2\n        "
+  },
+  "f835e8ebdcd687acf7fcf845127617860abd3d7a806a900aa6d608c993dabb0b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO idempotency (\n            user_id,\n            idempotency_key,\n            created_at\n        )\n        VALUES ($1, $2, now())\n        ON CONFLICT DO NOTHING\n        "
   }
 }
