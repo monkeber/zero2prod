@@ -4,6 +4,8 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::email_client::EmailClient;
+use zero2prod::issue_delivery_worker::{try_execute_task, ExecutionOutcome};
 use zero2prod::startup::{get_connection_pool, Application};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
@@ -40,6 +42,15 @@ impl TestUser {
         }
     }
 
+    pub async fn login(&self, app: &TestApp) {
+        let login_body = serde_json::json!({
+            "username": &self.username,
+            "password": &self.password
+        });
+
+        app.post_login(&login_body).await;
+    }
+
     async fn store(&self, pool: &PgPool) {
         let salt = SaltString::generate(&mut rand::thread_rng());
         let password_hash = Argon2::new(
@@ -67,12 +78,25 @@ pub struct TestApp {
     pub port: u16,
     pub address: String,
     pub db_pool: PgPool,
+    pub email_client: EmailClient,
     pub email_server: MockServer,
     pub test_user: TestUser,
     pub api_client: reqwest::Client,
 }
 
 impl TestApp {
+    pub async fn dispatch_all_pending_emails(&self) {
+        loop {
+            if let ExecutionOutcome::EmptyQueue =
+                try_execute_task(&self.db_pool, &self.email_client)
+                    .await
+                    .unwrap()
+            {
+                break;
+            }
+        }
+    }
+
     pub async fn get_admin_dashboard(&self) -> reqwest::Response {
         self.api_client
             .get(&format!("{}/admin/dashboard", &self.address))
@@ -91,6 +115,10 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn get_admin_newsletters_html(&self) -> String {
+        self.get_admin_newsletters().await.text().await.unwrap()
     }
 
     pub async fn get_change_password(&self) -> reqwest::Response {
@@ -150,7 +178,7 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
+    pub async fn post_newsletters(&self, body: &serde_json::Value) -> reqwest::Response {
         self.api_client
             .post(&format!("{}/admin/newsletters", &self.address))
             .form(&body)
@@ -227,6 +255,7 @@ pub async fn spawn_app() -> TestApp {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
         db_pool: get_connection_pool(&configuration.database),
+        email_client: configuration.email_client.client(),
         email_server,
         test_user: TestUser::generate(),
         api_client: client,
