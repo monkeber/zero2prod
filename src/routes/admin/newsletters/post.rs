@@ -39,7 +39,7 @@ pub struct FormData {
 }
 
 fn success_message() -> FlashMessage {
-    FlashMessage::info("The newsletter issue has been accepted - emails will go out shprtly.")
+    FlashMessage::info("The newsletter issue has been accepted - emails will go out shortly.")
 }
 
 #[tracing::instrument(
@@ -82,32 +82,11 @@ pub async fn publish_newsletter(
         .context("Failed to enqueue delivery tasks")
         .map_err(e500)?;
 
-    // let subscribers = get_confirmed_subscribers(&pool).await.map_err(e500)?;
-    // for subscriber in subscribers {
-    //     match subscriber {
-    //         Ok(subscriber) => {
-    //             email_client
-    //                 .send_email(&subscriber.email, &title, &html_body, &text_body)
-    //                 .await
-    //                 .with_context(|| {
-    //                     format!("Failed to send newsletter issue to {}", subscriber.email)
-    //                 })
-    //                 .map_err(e500)?;
-    //         }
-    //         Err(error) => {
-    //             tracing::warn!(
-    //             error.cause_chain = ?error,
-    //             "Skipping a confirmed subscriber. \
-    //             Their stored contact details are invalid");
-    //         }
-    //     }
-    // }
-    // success_message().send();
-
     let response = see_other("/admin/newsletters");
     let response = save_response(transaction, &idempotency_key, *user_id, response)
         .await
         .map_err(e500)?;
+    success_message().send();
 
     Ok(response)
 }
